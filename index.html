@@ -17,74 +17,183 @@ import {
 } from 'lucide-react';
 
 // --- Configuration Constants ---
-const ALL_CATEGORIES = [
-  "เป็นตัวตนที่แท้จริง - มีจริตตรงกับงาน",
-  "เป็นตัวตนที่แท้จริง - มีจริตตรงกับองค์กร",
-  "เป็นสุขทางใจ - รู้สึกประทับใจตั้งแต่ตอนสมัครและเข้ามาทำงานจนถึงปัจจุบัน",
-  "องค์กรมีนโยบาย และแนวทางส่งเสริมให้ บุคลากร - คือ ความคาดหวังขององค์กร",
-  "อยู่ดีกินดี - งานที่ทำมีความมั่นคง",
-  "อยู่ดีกินดี - ได้รับค่าตอบแทนที่เหมาะสม",
-  "อยู่ดีกินดี - ได้รับสวัสดิการที่ดี",
-  "อยู่ดีกินดี - ได้รับโอกาสเพื่อพัฒนาตนเอง",
-  "อยู่ดีกินดี - มีเวลาส่วนตัวให้กับตัวเองและครอบครัว",
-  "อยู่ดีกินดี - องค์กรสนับสนุนเรื่องอาหารการกิน การบริโภคอย่างถูกโภชนาการ สะอาด ปลอดภัย และดีต่อสุขภาพ",
-  "อยู่ในตำแหน่งที่เหมาะสมและเป็นที่ยอมรับ - มีภาระหน้าที่ที่ชัดเจน",
-  "อยู่ในตำแหน่งที่เหมาะสมและเป็นที่ยอมรับ - มีอิสระในการออกแบบแนวทางหรือวิธีการทำงาน",
-  "อยู่ในตำแหน่งที่เหมาะสมและเป็นที่ยอมรับ - มีโอกาสเติบโตในอาชีพ",
-  "อยู่ในสภาพแวดล้อมที่เอื้อต่อการทำงาน - มีระบบงานที่ดี",
-  "อยู่ในสภาพแวดล้อมที่เอื้อต่อการทำงาน - มุ่งเน้นผลงาน",
-  "อยู่ในสภาพแวดล้อมที่เอื้อต่อการทำงาน - สถานที่ทำงานน่าอยู่ ปลอดมลพิษทางอากาศ เสียง และสิ่งแวดล้อม",
-  "อยู่ในองค์กรที่ดี มีผู้นำและ เพื่อนร่วมงานที่ดี - เพื่อนร่วมงานให้การสนับสนุน และช่วยเหลือในการทำงาน",
-  "อยู่ในองค์กรที่ดี มีผู้นำและ เพื่อนร่วมงานที่ดี - หัวหน้าโดยตรงรับฟัง ให้คำปรึกษา และร่วมแก้ปัญหาไปด้วยกัน",
-  "อยู่อย่างมี Passion - เห็นว่างานมีคุณค่า และท้าทาย"
-];
-
 const TENURE_GROUPS = [
   "อายุงาน ไม่เกิน 2 ปี",
   "อายุงาน 2 ถึง 10 ปี",
   "อายุงานตั้งแต่ 10 ปี ขึ้นไป"
 ];
 
-// --- Data Generation ---
-const INITIAL_DATA_GENERATOR = () => {
-  let expandedData = [];
-  let idCounter = 1;
-
-  const add = (cat, tenure, type, count, suggestType = null) => {
-    for(let i=0; i<count; i++) {
-      expandedData.push({ 
-        id: idCounter++, 
-        category: cat, 
-        tenure: tenure, 
-        type: type, 
-        comment: `(ข้อมูลตัวอย่างสำหรับหมวด: ${cat.split('-')[1] || cat})`, 
-        suggestionType: suggestType 
-      });
-    }
-  };
-
-  ALL_CATEGORIES.forEach((cat, index) => {
-    TENURE_GROUPS.forEach(tenure => {
-      const baseCount = Math.floor(Math.random() * 5); 
-      
-      if (cat.includes("อยู่ดีกินดี") || cat.includes("สวัสดิการ")) {
-        add(cat, tenure, "ข้อเสนอแนะ", baseCount + 1, "บุคลากรปัจจุบัน");
-        add(cat, tenure, "Good Ex", baseCount, null);
-      } else if (cat.includes("เพื่อนร่วมงาน") || cat.includes("หัวหน้า")) {
-        add(cat, tenure, "Good Ex", baseCount + 2, null);
-        add(cat, tenure, "Bad Ex", Math.floor(Math.random() * 2), null);
-      } else if (cat.includes("ระบบงาน")) {
-        add(cat, tenure, "Bad Ex", baseCount + 1, null);
-        add(cat, tenure, "ข้อเสนอแนะ", baseCount, "คนรุ่นใหม่");
-      } else {
-        add(cat, tenure, "Good Ex", Math.floor(Math.random() * 3), null);
-        add(cat, tenure, "ข้อเสนอแนะ", Math.floor(Math.random() * 2), "เตรียมเกษียณ");
-      }
-    });
-  });
-
-  return expandedData;
-};
+// --- Data extracted from "รวม วิเคราะห์ NIA - Google ชีต.pdf" ---
+const STATIC_DATA = [
+  {
+    id: 1,
+    category: "เป็นตัวตนที่แท้จริง - มีจริตตรงกับงาน",
+    tenure: "อายุงาน ไม่เกิน 2 ปี",
+    type: "Good Ex",
+    comment: "พอมีน้องเข้ามาก็นึกคิดว่าสิ่งไหนที่เราไม่ค่อยชอบคอนเป็นน้อง เราก็จะไม่นำสิ่งนั้นมาส่งต่อ เราพยายามจะป้อนงานในสิ่งที่ตรง ตาม KPI ที่ไปในทิศทางเดียวกัน และใช้คนให้ถูกกับงาน",
+    suggestionType: null
+  },
+  {
+    id: 2,
+    category: "เป็นตัวตนที่แท้จริง - มีจริตตรงกับงาน",
+    tenure: "อายุงาน ไม่เกิน 2 ปี",
+    type: "Good Ex",
+    comment: "การวางโครงสร้างของพี่ๆเอา nature ของพวกผมเป็นหลักใน การผลักดันให้ทำงาน",
+    suggestionType: null
+  },
+  {
+    id: 3,
+    category: "เป็นตัวตนที่แท้จริง - มีจริตตรงกับงาน",
+    tenure: "อายุงาน 2 ถึง 10 ปี",
+    type: "Good Ex",
+    comment: "โฟกัสงาน",
+    suggestionType: null
+  },
+  {
+    id: 4,
+    category: "เป็นตัวตนที่แท้จริง - มีจริตตรงกับองค์กร",
+    tenure: "อายุงาน 2 ถึง 10 ปี",
+    type: "ข้อเสนอแนะ",
+    comment: "culture เฟรนด์ลีกับคนรุ่นใหม่ (คงไว้)",
+    suggestionType: "บุคลากรปัจจุบัน"
+  },
+  {
+    id: 5,
+    category: "เป็นตัวตนที่แท้จริง - มีจริตตรงกับองค์กร",
+    tenure: "อายุงานตั้งแต่ 10 ปี ขึ้นไป",
+    type: "ข้อเสนอแนะ",
+    comment: "ลดการคิดถึงแต่ประโยชน์ส่วนบุคคล เพิ่ม empathy ต่อผู้อื่นมากกว่านี้ ในทุกๆคน จะเพิ่มบรรยากาศในการทำงานให้ดีขึ้น",
+    suggestionType: "บุคลากรปัจจุบัน"
+  },
+  {
+    id: 6,
+    category: "อยู่อย่างมี Passion - เห็นว่างานมีคุณค่า และท้าทาย",
+    tenure: "อายุงาน ไม่เกิน 2 ปี",
+    type: "Good Ex",
+    comment: "ยังสนุกกับเนืองานอยู่ เพื่อนร่วมงานดี ชอบงานท้าทาย",
+    suggestionType: null
+  },
+  {
+    id: 7,
+    category: "อยู่อย่างมี Passion - เห็นว่างานมีคุณค่า และท้าทาย",
+    tenure: "อายุงาน ไม่เกิน 2 ปี",
+    type: "Good Ex",
+    comment: "งานค่อนข้างเปลี่ยนเรื่อย ๆ ความน่าเบื่อในงานไม่มีเลย",
+    suggestionType: null
+  },
+  {
+    id: 8,
+    category: "อยู่อย่างมี Passion - เห็นว่างานมีคุณค่า และท้าทาย",
+    tenure: "อายุงาน ไม่เกิน 2 ปี",
+    type: "Good Ex",
+    comment: "งานมีคุณค่าต่อสังคมชุมชน",
+    suggestionType: null
+  },
+  {
+    id: 9,
+    category: "อยู่อย่างมี Passion - เห็นว่างานมีคุณค่า และท้าทาย",
+    tenure: "อายุงาน 2 ถึง 10 ปี",
+    type: "Good Ex",
+    comment: "เดินทางบ่อย ได้เห็นอะไรที่ไม่นึกว่าชีวิตนี้จะได้เจอ ไปถึงชุมชน ปรับ mindset",
+    suggestionType: null
+  },
+  {
+    id: 10,
+    category: "อยู่ในองค์กรที่ดี มีผู้นำและ เพื่อนร่วมงานที่ดี - หัวหน้าโดยตรงรับฟัง ให้คำปรึกษา และร่วมแก้ปัญหาไปด้วยกัน",
+    tenure: "อายุงานตั้งแต่ 10 ปี ขึ้นไป",
+    type: "Good Ex",
+    comment: "หัวหน้าเปิดรับ เวลาเราสงสัยอะไร คุยกับเค้า รับฟัง เปิดกว้าง เสริมได้รับฟัง",
+    suggestionType: null
+  },
+  {
+    id: 11,
+    category: "อยู่ในองค์กรที่ดี มีผู้นำและ เพื่อนร่วมงานที่ดี - หัวหน้าโดยตรงรับฟัง ให้คำปรึกษา และร่วมแก้ปัญหาไปด้วยกัน",
+    tenure: "อายุงานตั้งแต่ 10 ปี ขึ้นไป",
+    type: "ข้อเสนอแนะ",
+    comment: "สร้างproject ใหม่ๆ ที่น่าสนใจ มีความท้าทายมาดึงดูดให้พนักงาน ใหม่ๆมาสมัคร",
+    suggestionType: "คนรุ่นใหม่"
+  },
+  {
+    id: 12,
+    category: "อยู่ในสภาพแวดล้อมที่เอื้อต่อการทำงาน - มีระบบงานที่ดี",
+    tenure: "อายุงานตั้งแต่ 10 ปี ขึ้นไป",
+    type: "ข้อเสนอแนะ",
+    comment: "เพิ่มเครื่องมือที่ช่วยในการทำงาน เช่น เครื่องมือทดแทนการจดจำ card ลายเซ็นต์ว่าต้องเป็นท่านไหนคู่กับท่านไหน",
+    suggestionType: "บุคลากรปัจจุบัน"
+  },
+  {
+    id: 13,
+    category: "อยู่ดีกินดี - ได้รับโอกาสเพื่อพัฒนาตนเอง",
+    tenure: "อายุงานตั้งแต่ 10 ปี ขึ้นไป",
+    type: "ข้อเสนอแนะ",
+    comment: "ฝึกอาชีพหลังเกษียณให้กับพนักงาน",
+    suggestionType: "เตรียมเกษียณ"
+  },
+  {
+    id: 14,
+    category: "อยู่ในตำแหน่งที่เหมาะสมและเป็นที่ยอมรับ - มีโอกาสเติบโตในอาชีพ",
+    tenure: "อายุงานตั้งแต่ 10 ปี ขึ้นไป",
+    type: "ข้อเสนอแนะ",
+    comment: "ขยายเกษียณ",
+    suggestionType: "เตรียมเกษียณ"
+  },
+  {
+    id: 15,
+    category: "อยู่ดีกินดี - ได้รับสวัสดิการที่ดี",
+    tenure: "อายุงานตั้งแต่ 10 ปี ขึ้นไป",
+    type: "ข้อเสนอแนะ",
+    comment: "ต้องการบำนาญ​ หรือความช่วยเหลือต่อเนื่องหลังเกษียณ",
+    suggestionType: "เตรียมเกษียณ"
+  },
+   {
+    id: 16,
+    category: "อยู่ดีกินดี - ได้รับโอกาสเพื่อพัฒนาตนเอง",
+    tenure: "อายุงานตั้งแต่ 10 ปี ขึ้นไป",
+    type: "ข้อเสนอแนะ",
+    comment: "ให้ความรู้ ในการเตรียมตัวรับวัยเกษียณ",
+    suggestionType: "เตรียมเกษียณ"
+  },
+  {
+    id: 17,
+    category: "อยู่ในองค์กรที่ดี มีผู้นำและ เพื่อนร่วมงานที่ดี - หัวหน้าโดยตรงรับฟัง ให้คำปรึกษา และร่วมแก้ปัญหาไปด้วยกัน",
+    tenure: "อายุงาน ไม่เกิน 2 ปี",
+    type: "Good Ex",
+    comment: "สมัยตอนเป็นน้องเข้ามาทำงานแรกก็ไม่ค่อยรู้ พี่ๆก็แนะนำได้ดี งานที่ทำอยู่คืออะไร strat up คืออะไร และให้เราลองทำเอกสารมาก่อน ถ้าไม่ถูกก็ให้คำแนะนำดีมาก เห็นทุกคนคุยกันก็อยากจะผลักดันตัวเองให้ดีมากขึ้น",
+    suggestionType: null
+  },
+  {
+    id: 18,
+    category: "อยู่ในตำแหน่งที่เหมาะสมและเป็นที่ยอมรับ - มีภาระหน้าที่ที่ชัดเจน",
+    tenure: "อายุงาน ไม่เกิน 2 ปี",
+    type: "Good Ex",
+    comment: "ทำงานที่เป็นหน้าที่ได้รับมาทำจบ",
+    suggestionType: null
+  },
+  {
+    id: 19,
+    category: "อยู่ในองค์กรที่ดี มีผู้นำและ เพื่อนร่วมงานที่ดี - เพื่อนร่วมงานให้การสนับสนุน และช่วยเหลือในการทำงาน",
+    tenure: "อายุงาน ไม่เกิน 2 ปี",
+    type: "Bad Ex",
+    comment: "เป็นบางส่วนที่เวลาเราได้รับประสานมา แล้วเป็นในส่วนที่เขารับผิดชอบ แต่ผลักหน้าที่นั้นมาให้เราทำ เลยมีความรู้สึกว่าไม่แฟร์ ทำได้ แต่ในทีมไม่มีปัญหา",
+    suggestionType: null
+  },
+  {
+    id: 20,
+    category: "อยู่ดีกินดี - ได้รับสวัสดิการที่ดี",
+    tenure: "อายุงาน ไม่เกิน 2 ปี",
+    type: "Good Ex",
+    comment: "กองทุนสำรองเลี้ยงชีพ",
+    suggestionType: null
+  },
+  {
+    id: 21,
+    category: "อยู่ดีกินดี - ได้รับสวัสดิการที่ดี",
+    tenure: "อายุงาน ไม่เกิน 2 ปี",
+    type: "ข้อเสนอแนะ",
+    comment: "สวัสดิการที่ให้กับเขา",
+    suggestionType: "คนรุ่นใหม่"
+  }
+];
 
 // --- Helper Functions ---
 const parseCSV = (text) => {
@@ -108,7 +217,7 @@ const parseCSV = (text) => {
   const isSummaryFormat = headers.some(h => h.includes('Good Ex') || h.includes('Bad Ex'));
 
   let parsedData = [];
-  let idCounter = 1;
+  let idCounter = 1000; // Start higher to avoid collision with static data
 
   lines.slice(1).forEach((line, index) => {
     const values = parseLine(line);
@@ -129,13 +238,14 @@ const parseCSV = (text) => {
       for(let i=0; i<retireCount; i++) parsedData.push({ id: idCounter++, category, tenure, type: "ข้อเสนอแนะ", comment: "ข้อเสนอต่อการเตรียมเกษียณ", suggestionType: "เตรียมเกษียณ" });
 
     } else {
+      // General CSV format handling
       parsedData.push({
         id: idCounter++,
         category: values[0] || "Unknown",
         tenure: values[1] || "Unknown",
         comment: values[2] || "",
         type: values[3] || "Unknown",
-        suggestionType: values[4] || ""
+        suggestionType: values[4] ? mapSuggestionType(values[4]) : null
       });
     }
   });
@@ -143,22 +253,30 @@ const parseCSV = (text) => {
   return parsedData;
 };
 
+// Map long text to short categories
+const mapSuggestionType = (text) => {
+  if (text.includes("คนรุ่นใหม่")) return "คนรุ่นใหม่";
+  if (text.includes("บุคลากรปัจจุบัน")) return "บุคลากรปัจจุบัน";
+  if (text.includes("เตรียมเกษียณ")) return "เตรียมเกษียณ";
+  return text;
+};
+
 // --- Color Configuration ---
-// Primary Blue: #144e8e
-// Red: #E30613 (Using a standard corporate red that pairs well with the blue, assuming the user typo'd the red hex)
-// Gold/Yellow: #F59E0B (Standard Warning/Suggestion color)
+// Primary Blue: #144e8e (NIA)
+// Red: #E30613 (NIA Red/Standard Red)
+// Gold/Yellow: #EAB308 (Suggestion)
 const COLORS = {
   primary: '#144e8e', 
   good: '#10b981',     // Green
-  bad: '#D32F2F',      // Red (Distinct from Blue)
+  bad: '#E30613',      // Red
   suggestion: '#EAB308', // Gold/Yellow
   background: '#F8FAFC',
   white: '#FFFFFF'
 };
 
 export default function NIAWellbeingDashboard() {
-  const [rawData, setRawData] = useState(INITIAL_DATA_GENERATOR());
-  const [filteredData, setFilteredData] = useState(INITIAL_DATA_GENERATOR());
+  const [rawData, setRawData] = useState(STATIC_DATA);
+  const [filteredData, setFilteredData] = useState(STATIC_DATA);
   const [uploadMode, setUploadMode] = useState(false);
   const [csvInput, setCsvInput] = useState('');
 
@@ -255,7 +373,7 @@ export default function NIAWellbeingDashboard() {
             </div>
             <div>
               <h1 className="text-xl font-bold leading-tight tracking-wide">Well-being Analytics</h1>
-              <p className="text-xs text-blue-100 opacity-90 font-light">ระบบวิเคราะห์สุขภาวะองค์กร NIA</p>
+              <p className="text-xs text-blue-100 opacity-90 font-light">ระบบวิเคราะห์สุขภาวะองค์กร NIA (Updated Data)</p>
             </div>
           </div>
           
@@ -298,7 +416,7 @@ export default function NIAWellbeingDashboard() {
           </div>
         )}
 
-        {/* 1. FILTERS BAR (Moved to Top) */}
+        {/* 1. FILTERS BAR (Top) */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
           <div className="flex items-center gap-2 mb-4 font-semibold text-slate-700 border-b pb-2">
             <Filter className="w-5 h-5 text-blue-600" /> 
