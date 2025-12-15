@@ -1,0 +1,457 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { 
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer
+} from 'recharts';
+import { 
+  LayoutDashboard, 
+  Filter, 
+  Smile, 
+  Frown, 
+  Lightbulb, 
+  Users, 
+  Upload, 
+  FileText,
+  ChevronDown,
+  Info,
+  X
+} from 'lucide-react';
+
+// --- Configuration Constants ---
+const ALL_CATEGORIES = [
+  "เป็นตัวตนที่แท้จริง - มีจริตตรงกับงาน",
+  "เป็นตัวตนที่แท้จริง - มีจริตตรงกับองค์กร",
+  "เป็นสุขทางใจ - รู้สึกประทับใจตั้งแต่ตอนสมัครและเข้ามาทำงานจนถึงปัจจุบัน",
+  "องค์กรมีนโยบาย และแนวทางส่งเสริมให้ บุคลากร - คือ ความคาดหวังขององค์กร",
+  "อยู่ดีกินดี - งานที่ทำมีความมั่นคง",
+  "อยู่ดีกินดี - ได้รับค่าตอบแทนที่เหมาะสม",
+  "อยู่ดีกินดี - ได้รับสวัสดิการที่ดี",
+  "อยู่ดีกินดี - ได้รับโอกาสเพื่อพัฒนาตนเอง",
+  "อยู่ดีกินดี - มีเวลาส่วนตัวให้กับตัวเองและครอบครัว",
+  "อยู่ดีกินดี - องค์กรสนับสนุนเรื่องอาหารการกิน การบริโภคอย่างถูกโภชนาการ สะอาด ปลอดภัย และดีต่อสุขภาพ",
+  "อยู่ในตำแหน่งที่เหมาะสมและเป็นที่ยอมรับ - มีภาระหน้าที่ที่ชัดเจน",
+  "อยู่ในตำแหน่งที่เหมาะสมและเป็นที่ยอมรับ - มีอิสระในการออกแบบแนวทางหรือวิธีการทำงาน",
+  "อยู่ในตำแหน่งที่เหมาะสมและเป็นที่ยอมรับ - มีโอกาสเติบโตในอาชีพ",
+  "อยู่ในสภาพแวดล้อมที่เอื้อต่อการทำงาน - มีระบบงานที่ดี",
+  "อยู่ในสภาพแวดล้อมที่เอื้อต่อการทำงาน - มุ่งเน้นผลงาน",
+  "อยู่ในสภาพแวดล้อมที่เอื้อต่อการทำงาน - สถานที่ทำงานน่าอยู่ ปลอดมลพิษทางอากาศ เสียง และสิ่งแวดล้อม",
+  "อยู่ในองค์กรที่ดี มีผู้นำและ เพื่อนร่วมงานที่ดี - เพื่อนร่วมงานให้การสนับสนุน และช่วยเหลือในการทำงาน",
+  "อยู่ในองค์กรที่ดี มีผู้นำและ เพื่อนร่วมงานที่ดี - หัวหน้าโดยตรงรับฟัง ให้คำปรึกษา และร่วมแก้ปัญหาไปด้วยกัน",
+  "อยู่อย่างมี Passion - เห็นว่างานมีคุณค่า และท้าทาย"
+];
+
+const TENURE_GROUPS = [
+  "อายุงาน ไม่เกิน 2 ปี",
+  "อายุงาน 2 ถึง 10 ปี",
+  "อายุงานตั้งแต่ 10 ปี ขึ้นไป"
+];
+
+// --- Data Generation ---
+const INITIAL_DATA_GENERATOR = () => {
+  let expandedData = [];
+  let idCounter = 1;
+
+  const add = (cat, tenure, type, count, suggestType = null) => {
+    for(let i=0; i<count; i++) {
+      expandedData.push({ 
+        id: idCounter++, 
+        category: cat, 
+        tenure: tenure, 
+        type: type, 
+        comment: `(ข้อมูลตัวอย่างสำหรับหมวด: ${cat.split('-')[1] || cat})`, 
+        suggestionType: suggestType 
+      });
+    }
+  };
+
+  ALL_CATEGORIES.forEach((cat, index) => {
+    TENURE_GROUPS.forEach(tenure => {
+      const baseCount = Math.floor(Math.random() * 5); 
+      
+      if (cat.includes("อยู่ดีกินดี") || cat.includes("สวัสดิการ")) {
+        add(cat, tenure, "ข้อเสนอแนะ", baseCount + 1, "บุคลากรปัจจุบัน");
+        add(cat, tenure, "Good Ex", baseCount, null);
+      } else if (cat.includes("เพื่อนร่วมงาน") || cat.includes("หัวหน้า")) {
+        add(cat, tenure, "Good Ex", baseCount + 2, null);
+        add(cat, tenure, "Bad Ex", Math.floor(Math.random() * 2), null);
+      } else if (cat.includes("ระบบงาน")) {
+        add(cat, tenure, "Bad Ex", baseCount + 1, null);
+        add(cat, tenure, "ข้อเสนอแนะ", baseCount, "คนรุ่นใหม่");
+      } else {
+        add(cat, tenure, "Good Ex", Math.floor(Math.random() * 3), null);
+        add(cat, tenure, "ข้อเสนอแนะ", Math.floor(Math.random() * 2), "เตรียมเกษียณ");
+      }
+    });
+  });
+
+  return expandedData;
+};
+
+// --- Helper Functions ---
+const parseCSV = (text) => {
+  const lines = text.split('\n').filter(line => line.trim() !== '');
+  const headers = lines[0].split(',').map(h => h.trim());
+  
+  const parseLine = (line) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') inQuotes = !inQuotes;
+      else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+      else current += char;
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const isSummaryFormat = headers.some(h => h.includes('Good Ex') || h.includes('Bad Ex'));
+
+  let parsedData = [];
+  let idCounter = 1;
+
+  lines.slice(1).forEach((line, index) => {
+    const values = parseLine(line);
+    
+    if (isSummaryFormat) {
+      const category = values[0];
+      const tenure = values[1];
+      const goodCount = parseInt(values[2]) || 0;
+      const badCount = parseInt(values[3]) || 0;
+      const newGenCount = parseInt(values[4]) || 0;
+      const currentCount = parseInt(values[5]) || 0;
+      const retireCount = parseInt(values[6]) || 0;
+
+      for(let i=0; i<goodCount; i++) parsedData.push({ id: idCounter++, category, tenure, type: "Good Ex", comment: "(Summary Data)", suggestionType: null });
+      for(let i=0; i<badCount; i++) parsedData.push({ id: idCounter++, category, tenure, type: "Bad Ex", comment: "(Summary Data)", suggestionType: null });
+      for(let i=0; i<newGenCount; i++) parsedData.push({ id: idCounter++, category, tenure, type: "ข้อเสนอแนะ", comment: "ข้อเสนอที่ดึงดูดคนรุ่นใหม่", suggestionType: "คนรุ่นใหม่" });
+      for(let i=0; i<currentCount; i++) parsedData.push({ id: idCounter++, category, tenure, type: "ข้อเสนอแนะ", comment: "ข้อเสนอต่อบุคลากรปัจจุบัน", suggestionType: "บุคลากรปัจจุบัน" });
+      for(let i=0; i<retireCount; i++) parsedData.push({ id: idCounter++, category, tenure, type: "ข้อเสนอแนะ", comment: "ข้อเสนอต่อการเตรียมเกษียณ", suggestionType: "เตรียมเกษียณ" });
+
+    } else {
+      parsedData.push({
+        id: idCounter++,
+        category: values[0] || "Unknown",
+        tenure: values[1] || "Unknown",
+        comment: values[2] || "",
+        type: values[3] || "Unknown",
+        suggestionType: values[4] || ""
+      });
+    }
+  });
+
+  return parsedData;
+};
+
+// --- Color Configuration ---
+// Primary Blue: #144e8e
+// Red: #E30613 (Using a standard corporate red that pairs well with the blue, assuming the user typo'd the red hex)
+// Gold/Yellow: #F59E0B (Standard Warning/Suggestion color)
+const COLORS = {
+  primary: '#144e8e', 
+  good: '#10b981',     // Green
+  bad: '#D32F2F',      // Red (Distinct from Blue)
+  suggestion: '#EAB308', // Gold/Yellow
+  background: '#F8FAFC',
+  white: '#FFFFFF'
+};
+
+export default function NIAWellbeingDashboard() {
+  const [rawData, setRawData] = useState(INITIAL_DATA_GENERATOR());
+  const [filteredData, setFilteredData] = useState(INITIAL_DATA_GENERATOR());
+  const [uploadMode, setUploadMode] = useState(false);
+  const [csvInput, setCsvInput] = useState('');
+
+  // Filters
+  const [selectedTenure, setSelectedTenure] = useState('All');
+  const [selectedType, setSelectedType] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const tenureOptions = useMemo(() => ['All', ...TENURE_GROUPS], []);
+  const typeOptions = useMemo(() => ['All', ...new Set(rawData.map(d => d.type).filter(Boolean))], [rawData]);
+  const categoryOptions = useMemo(() => ['All', ...new Set(rawData.map(d => d.category?.split('-')[0].trim()).filter(Boolean))], [rawData]);
+
+  const simplifyCategory = (fullCat) => {
+    if (!fullCat) return "Other";
+    const parts = fullCat.split('-');
+    return parts.length > 1 ? parts[1].trim() : parts[0].trim();
+  };
+
+  const getMainCategory = (fullCat) => fullCat?.split('-')[0].trim() || "Other";
+
+  // Apply Filters
+  useEffect(() => {
+    let result = rawData;
+    if (selectedTenure !== 'All') result = result.filter(d => d.tenure === selectedTenure);
+    if (selectedType !== 'All') result = result.filter(d => d.type === selectedType);
+    if (selectedCategory !== 'All') result = result.filter(d => d.category?.includes(selectedCategory));
+    setFilteredData(result);
+  }, [selectedTenure, selectedType, selectedCategory, rawData]);
+
+  const handleDataLoad = () => {
+    try {
+      const parsed = parseCSV(csvInput);
+      if (parsed.length > 0) {
+        setRawData(parsed);
+        setUploadMode(false);
+        setCsvInput('');
+        alert(`นำเข้าและแปลงข้อมูลสำเร็จ: ${parsed.length} รายการ`);
+      }
+    } catch (e) {
+      alert("เกิดข้อผิดพลาดในการอ่านไฟล์ CSV");
+    }
+  };
+
+  const stats = useMemo(() => {
+    const total = filteredData.length;
+    const good = filteredData.filter(d => d.type === 'Good Ex').length;
+    const bad = filteredData.filter(d => d.type === 'Bad Ex').length;
+    const suggest = filteredData.filter(d => d.type === 'ข้อเสนอแนะ').length;
+
+    const sNew = filteredData.filter(d => d.suggestionType === 'คนรุ่นใหม่').length;
+    const sCur = filteredData.filter(d => d.suggestionType === 'บุคลากรปัจจุบัน').length;
+    const sRet = filteredData.filter(d => d.suggestionType === 'เตรียมเกษียณ').length;
+
+    return { total, good, bad, suggest, sNew, sCur, sRet };
+  }, [filteredData]);
+
+  const sentimentData = [
+    { name: 'Good Ex', value: stats.good, color: COLORS.good },
+    { name: 'Bad Ex', value: stats.bad, color: COLORS.bad },
+    { name: 'Suggestion', value: stats.suggest, color: COLORS.suggestion },
+  ].filter(d => d.value > 0);
+
+  const suggestionBreakdownData = [
+    { name: 'คนรุ่นใหม่', value: stats.sNew, color: '#FCD34D' }, // Lighter Gold
+    { name: 'ปัจจุบัน', value: stats.sCur, color: COLORS.suggestion },
+    { name: 'เตรียมเกษียณ', value: stats.sRet, color: '#B45309' }, // Darker Gold
+  ].filter(d => d.value > 0);
+
+  const mainCategoryChartData = useMemo(() => {
+    const counts = {};
+    filteredData.forEach(d => {
+      const cat = getMainCategory(d.category);
+      if (!counts[cat]) counts[cat] = { name: cat, Good: 0, Bad: 0, Suggestion: 0, total: 0 };
+      if (d.type === 'Good Ex') counts[cat].Good += 1;
+      else if (d.type === 'Bad Ex') counts[cat].Bad += 1;
+      else counts[cat].Suggestion += 1;
+      counts[cat].total += 1;
+    });
+    return Object.values(counts).sort((a, b) => b.total - a.total); 
+  }, [filteredData]);
+
+  return (
+    <div className="min-h-screen font-sans text-slate-800" style={{ backgroundColor: COLORS.background }}>
+      {/* Navbar */}
+      <div style={{ backgroundColor: COLORS.primary }} className="text-white px-6 py-4 shadow-lg sticky top-0 z-50">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="bg-white p-1.5 rounded-md shadow-sm">
+               <img 
+                 src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/National_Innovation_Agency_%28Thailand%29_logo.png/320px-National_Innovation_Agency_%28Thailand%29_logo.png" 
+                 alt="NIA Logo" 
+                 className="h-10 w-auto"
+               />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold leading-tight tracking-wide">Well-being Analytics</h1>
+              <p className="text-xs text-blue-100 opacity-90 font-light">ระบบวิเคราะห์สุขภาวะองค์กร NIA</p>
+            </div>
+          </div>
+          
+          <button 
+            onClick={() => setUploadMode(!uploadMode)}
+            className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all text-sm font-medium border border-white/20 backdrop-blur-sm"
+          >
+            {uploadMode ? <X className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
+            {uploadMode ? 'ปิดหน้าต่าง' : 'นำเข้าข้อมูล CSV'}
+          </button>
+        </div>
+      </div>
+
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-6">
+        
+        {/* CSV Upload Section */}
+        {uploadMode && (
+          <div className="bg-white p-6 rounded-xl shadow-lg border border-blue-100 animate-in fade-in slide-in-from-top-4">
+            <h3 className="font-semibold text-lg mb-2 flex items-center gap-2 text-blue-800">
+              <FileText className="w-5 h-5"/> 
+              นำเข้าข้อมูลใหม่
+            </h3>
+            <textarea 
+              className="w-full h-32 p-3 border border-slate-200 rounded-lg font-mono text-sm focus:ring-2 outline-none transition-all mb-4"
+              style={{ '--tw-ring-color': COLORS.primary }}
+              placeholder={`วางข้อมูล CSV ที่นี่...`}
+              value={csvInput}
+              onChange={(e) => setCsvInput(e.target.value)}
+            />
+            <div className="flex justify-end">
+              <button 
+                onClick={handleDataLoad}
+                disabled={!csvInput}
+                className="text-white px-6 py-2 rounded-lg font-medium hover:shadow-md transition-all disabled:opacity-50"
+                style={{ backgroundColor: COLORS.primary }}
+              >
+                ประมวลผลข้อมูล
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 1. FILTERS BAR (Moved to Top) */}
+        <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+          <div className="flex items-center gap-2 mb-4 font-semibold text-slate-700 border-b pb-2">
+            <Filter className="w-5 h-5 text-blue-600" /> 
+            ตัวกรองข้อมูล (Filters)
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FilterGroup label="ช่วงอายุงาน" value={selectedTenure} options={tenureOptions} onChange={setSelectedTenure} primaryColor={COLORS.primary} />
+            <FilterGroup label="ประเภทความเห็น" value={selectedType} options={typeOptions} onChange={setSelectedType} primaryColor={COLORS.primary} />
+            <FilterGroup label="หมวดหมู่หลัก" value={selectedCategory} options={categoryOptions} onChange={setSelectedCategory} primaryColor={COLORS.primary} />
+          </div>
+        </div>
+
+        {/* 2. KPI CARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard title="Total Records" value={stats.total} icon={<Users className="w-6 h-6 text-blue-600" />} bg="bg-white" border={COLORS.primary} />
+          <StatCard title="Good Experience" value={stats.good} subValue={`${((stats.good/stats.total)*100 || 0).toFixed(0)}%`} icon={<Smile className="w-6 h-6 text-emerald-500" />} bg="bg-white" border={COLORS.good} />
+          <StatCard title="Bad Experience" value={stats.bad} subValue={`${((stats.bad/stats.total)*100 || 0).toFixed(0)}%`} icon={<Frown className="w-6 h-6 text-red-500" />} bg="bg-white" border={COLORS.bad} />
+          <StatCard title="Suggestions" value={stats.suggest} subValue={`${((stats.suggest/stats.total)*100 || 0).toFixed(0)}%`} icon={<Lightbulb className="w-6 h-6 text-yellow-500" />} bg="bg-white" border={COLORS.suggestion} />
+        </div>
+
+        {/* 3. CHARTS GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* Chart 1: Sentiment */}
+          <ChartCard title="สัดส่วนความรู้สึก (Sentiment)" primaryColor={COLORS.primary}>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie 
+                  data={sentimentData} 
+                  cx="50%" 
+                  cy="50%" 
+                  innerRadius={60} 
+                  outerRadius={90} 
+                  paddingAngle={5} 
+                  dataKey="value"
+                  label={({name, percent}) => `${(percent * 100).toFixed(0)}%`}
+                >
+                  {sentimentData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                </Pie>
+                <RechartsTooltip />
+                <Legend verticalAlign="bottom" height={36}/>
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {/* Chart 2: Suggestion Breakdown */}
+          <ChartCard title="กลุ่มเป้าหมายข้อเสนอแนะ (Target Audience)" primaryColor={COLORS.primary}>
+             <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={suggestionBreakdownData} layout="vertical" margin={{top: 5, right: 30, left: 20, bottom: 5}}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" width={90} tick={{fontSize: 12, fill: '#475569'}} />
+                <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={32}>
+                  {suggestionBreakdownData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {/* Chart 3: Main Categories (Full Width) */}
+          <div className="lg:col-span-2">
+            <ChartCard title="ประเด็นสำคัญรายหมวดหมู่ (Top Categories)" primaryColor={COLORS.primary}>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={mainCategoryChartData} layout="vertical" margin={{top: 20, right: 30, left: 100, bottom: 5}}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
+                  <XAxis type="number" tickLine={false} axisLine={false} />
+                  <YAxis dataKey="name" type="category" width={180} tick={{fontSize: 12, fill: '#475569'}} interval={0} />
+                  <RechartsTooltip cursor={{fill: '#f1f5f9'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
+                  <Legend wrapperStyle={{paddingTop: '20px'}}/>
+                  <Bar dataKey="Good" stackId="a" fill={COLORS.good} name="Good Ex" radius={[0, 0, 0, 0]} barSize={24} />
+                  <Bar dataKey="Bad" stackId="a" fill={COLORS.bad} name="Bad Ex" radius={[0, 0, 0, 0]} barSize={24} />
+                  <Bar dataKey="Suggestion" stackId="a" fill={COLORS.suggestion} name="Suggestion" radius={[0, 4, 4, 0]} barSize={24} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
+        </div>
+        
+        {/* 4. LIST VIEW */}
+         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-slate-500" />
+            <h3 className="font-semibold text-slate-700">
+              รายการข้อมูลรายละเอียด ({filteredData.length})
+            </h3>
+          </div>
+          <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
+            {filteredData.slice(0, 100).map((item) => (
+              <div key={item.id} className="p-4 hover:bg-slate-50 text-sm border-l-4 transition-all" 
+                   style={{ borderLeftColor: item.type === 'Good Ex' ? COLORS.good : item.type === 'Bad Ex' ? COLORS.bad : COLORS.suggestion }}>
+                 <div className="flex flex-wrap gap-2 mb-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+                      {item.tenure}
+                    </span>
+                    {item.suggestionType && (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-100">
+                        {item.suggestionType}
+                      </span>
+                    )}
+                 </div>
+                 <div className="font-semibold text-base mb-1" style={{ color: COLORS.primary }}>{item.category}</div>
+                 <div className="text-slate-500 text-sm leading-relaxed">{item.comment}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// UI Components
+const StatCard = ({ title, value, subValue, icon, bg, border }) => (
+  <div className={`p-5 rounded-xl shadow-sm border-b-4 flex justify-between items-center ${bg}`} style={{ borderBottomColor: border }}>
+    <div>
+      <p className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{title}</p>
+      <div className="flex items-baseline gap-2 mt-1">
+        <h2 className="text-3xl font-bold text-slate-800">{value}</h2>
+        {subValue && <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">{subValue}</span>}
+      </div>
+    </div>
+    <div className="p-3 rounded-xl bg-slate-50/50">{icon}</div>
+  </div>
+);
+
+const ChartCard = ({ title, children, primaryColor }) => (
+  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+    <h3 className="font-bold text-lg mb-6 flex items-center gap-2" style={{ color: primaryColor }}>
+      <div className="w-1 h-6 rounded-full" style={{ backgroundColor: primaryColor }}></div>
+      {title}
+    </h3>
+    {children}
+  </div>
+);
+
+const FilterGroup = ({ label, value, options, onChange, primaryColor }) => (
+  <div>
+    <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">{label}</label>
+    <div className="relative">
+      <select 
+        value={value} 
+        onChange={(e) => onChange(e.target.value)} 
+        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:border-transparent transition-all cursor-pointer hover:bg-slate-100"
+        style={{ '--tw-ring-color': primaryColor }}
+      >
+        {options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+      </select>
+      <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
+    </div>
+  </div>
+);
